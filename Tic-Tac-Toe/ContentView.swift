@@ -13,7 +13,9 @@ struct ContentView: View {
                                GridItem(.flexible()),
                                GridItem(.flexible())]
     @State private var moves: [Move?] = Array(repeating: nil, count: 9)
+    @State private var isGameboardDisabled = false
     @State private var isHumansTurn = true
+    @State private var alertItem: AlertItem?
     
     var body: some View {
         GeometryReader{ geometry in
@@ -36,29 +38,30 @@ struct ContentView: View {
                             moves[i] = Move(player: .human, boardIndex: i)
                             
                             if(checkWinCondition(for: .human, in: moves)){
-                                print("Human wins")
+                                alertItem = AlertContents.humanWins
                                 return;
                             }
                             // Check for Draw Condition
                             if checkDrawCondition(in: moves) {
-                                print("Draw")
+                                alertItem = AlertContents.draw
                                 return
                             }
+                            isGameboardDisabled = true
                             
                             // computer move
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 var computerPosition = getComputerMovePosition(in: moves)
                                 moves[computerPosition] = Move(player: .computer, boardIndex: computerPosition)
-                                
+                                isGameboardDisabled = false
                                 if(checkWinCondition(for: .computer, in: moves)){
-                                    print("Computer wins")
+                                    alertItem = AlertContents.computerWins
                                     return;
                                 }
                             }
                             
                             // Check for Draw Condition
                             if checkDrawCondition(in: moves) {
-                                print("Draw")
+                                alertItem = AlertContents.draw
                                 return
                             }
                         }
@@ -66,7 +69,15 @@ struct ContentView: View {
                 }
                 Spacer()
             }
+            .disabled(isGameboardDisabled)
             .padding()
+            .alert(item: $alertItem) { alertItem in
+                Alert(title: alertItem.title,
+                      message: alertItem.message,
+                      dismissButton:  .default(alertItem.buttonTitle, action: {
+                        resetGame()
+                      }))
+            }
         }
     }
     
@@ -95,6 +106,10 @@ struct ContentView: View {
     
     func checkDrawCondition(in moves: [Move?]) -> Bool {
         return moves.compactMap{$0}.count==9
+    }
+    
+    func resetGame() {
+        moves = Array(repeating: nil, count: 9)
     }
 }
 
